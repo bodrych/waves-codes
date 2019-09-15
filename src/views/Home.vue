@@ -2,10 +2,10 @@
 	<v-container>
 		<v-row>
 			<v-col cols="12" md="6">
-				<Create @set-status="updateSnackbar" />
+				<Withdraw @set-status="updateSnackbar" />
 			</v-col>
 			<v-col cols="12" md="6">
-				<Withdraw @set-status="updateSnackbar" />
+				<Create @set-status="updateSnackbar" />
 			</v-col>
 		</v-row>
 		<v-snackbar v-model="snackbar.display">

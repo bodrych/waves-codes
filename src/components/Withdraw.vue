@@ -6,7 +6,12 @@
     <v-card-text>
       <v-form>
         <v-text-field v-model="code" label="Code"></v-text-field>
-        <v-btn @click="withdraw">Withdraw</v-btn>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn v-on="on" @click="withdraw">Withdraw</v-btn>
+          </template>
+          <span>Withdraw funds assigned to the specified code</span>
+        </v-tooltip>
       </v-form>
     </v-card-text>
   </v-card>
@@ -23,19 +28,16 @@
     methods: {
       withdraw: async function () {
         try {
+          await api.checkKeeper()
           const kp = utils.keyPair(this.code)
-          const pk = kp.publicKey
           const publicState = await window.WavesKeeper.publicState()
-          const amount = await api.getCodeAmount(pk)
-          if (amount == null) {
-            this.$emit('set-status', { display: true, text: `The code doesn't exist` })
-            return;
-          }
+          const amount = await api.getCodeAmount(kp.publicKey)
+          await api.checkCodeUsed(kp.publicKey)
           const sig = utils.signBytes({ privateKey:  kp.privateKey }, publicState.account.publicKey)
-          await api.withdraw({ pk, sig })
-          this.$emit('set-status', { display: true, text: `${amount / 10 ** 8} WAVES` })
+          await api.withdraw({ pk: kp.publicKey, sig })
+          this.$emit('set-status', { display: true, text: `${amount / 10 ** 8} WAVES were withdrawn` })
         } catch (e) {
-          this.$emit('set-status', { display: true, text: e.data })
+          this.$emit('set-status', { display: true, text: e.message })
         }
       }
     },
