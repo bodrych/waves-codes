@@ -1,0 +1,36 @@
+{-# STDLIB_VERSION 3 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+@Callable(i)
+func create(pk:String) = {
+    let payment = i.payment.valueOrErrorMessage("Where is a payment?")
+    if (payment.assetId.isDefined()) then throw("You can use only WAVES at the moment") else
+        let codeExists = match getBoolean(this, pk + "_used") {
+            case b:Boolean => !b
+            case _:Unit => false
+        }
+        if codeExists then throw("The code exists") else
+            WriteSet([
+                DataEntry(pk + "_amount", payment.amount),
+                DataEntry(pk + "_used", false)
+            ])
+}
+
+@Callable(i)
+func withdraw(pk:String, sig:String) = {
+    let codeUsed = getBoolean(this, pk + "_used").valueOrErrorMessage("The code doesn't exist")
+    if codeUsed then throw("The code has already been used") else
+        if i.feeAssetId != unit then throw("Fee must be in WAVES") else
+            let valid = sigVerify(i.callerPublicKey, sig.fromBase58String(), pk.fromBase58String())
+            if !valid then throw("Invalid code") else
+                let amount = getIntegerValue(this, pk + "_amount")
+                ScriptResult(
+                    WriteSet([
+                        DataEntry(pk + "_used", true)
+                    ]),
+                    TransferSet([
+                        ScriptTransfer(i.caller, amount, unit)
+                    ])
+                )
+}
