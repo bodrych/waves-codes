@@ -22,7 +22,7 @@ export default {
       const response = await axios.get(`${config.apiBase}/addresses/data/${config.dApp}/${pk}_used`);
       if (response && response.data && response.data.value) throw new Error(`The code have already been used`);
     } catch (e) {
-      throw new Error(`The code doesn't exist`);
+      throw e;
     }
   },
   create: async ({ pk, amount }) => {

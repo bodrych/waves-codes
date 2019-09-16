@@ -1,5 +1,5 @@
 <template>
-  <v-card>
+  <v-card >
     <v-card-title>
       <span class="title">Withdraw</span>
     </v-card-title>
@@ -8,7 +8,13 @@
         <v-text-field v-model="code" label="Code"></v-text-field>
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <v-btn v-on="on" @click="withdraw">Withdraw</v-btn>
+            <v-btn color="primary" outlined v-on="on" @click="check">Check</v-btn>
+          </template>
+          <span>Check specified code</span>
+        </v-tooltip>
+        <v-tooltip bottom>
+          <template v-slot:activator="{ on }">
+            <v-btn color="primary" outlined class="ml-5" v-on="on" @click="withdraw">Withdraw</v-btn>
           </template>
           <span>Withdraw funds assigned to the specified code</span>
         </v-tooltip>
@@ -39,7 +45,17 @@
         } catch (e) {
           this.$emit('set-status', { display: true, text: e.message })
         }
-      }
+      },
+      check: async function () {
+        try {
+          const kp = utils.keyPair(this.code)
+          const amount = await api.getCodeAmount(kp.publicKey)
+          await api.checkCodeUsed(kp.publicKey)
+          this.$emit('set-status', { display: true, text: `${amount / 10 ** 8} WAVES code` })
+        } catch (e) {
+          this.$emit('set-status', { display: true, text: e.message })
+        }
+      },
     },
   }
 </script>
