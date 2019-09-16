@@ -5,7 +5,8 @@ import Home from './views/Home.vue'
 Vue.use(Router)
 
 export default new Router({
-	// mode: 'history',
+	base: process.env.environment === 'development' ? '/' : '/waves-codes/',
+	mode: 'history',
   routes: [
     {
       path: '/',
