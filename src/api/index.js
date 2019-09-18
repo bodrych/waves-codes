@@ -1,11 +1,15 @@
 import axios from 'axios';
 import config from '../config';
+import { waitForTx } from '@waves/waves-transactions'
 
 export default {
   checkKeeper: async () => {
     if (!window.WavesKeeper) throw new Error('Install WavesKeeper')
     const publicState = await window.WavesKeeper.publicState()
     if (publicState.account.networkCode !== config.network) throw new Error('Change network to MAINNET')
+  },
+  waitForTxId: async (id) => {
+    return waitForTx(id, { apiBase: config.apiBase })
   },
   getCodeAmount: async (pk) => {
     try {

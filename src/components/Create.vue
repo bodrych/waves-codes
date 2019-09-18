@@ -16,7 +16,9 @@
         </v-tooltip>
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">
-            <v-btn color="primary" outlined class="ml-5" v-on="on" @click="create">Create</v-btn>
+            <v-btn color="primary" :loading="loading" outlined class="ml-5" v-on="on" @click="create">Create
+              <template v-slot:loader>Wait...</template>
+            </v-btn>
           </template>
           <span>Create new code with specified amount</span>
         </v-tooltip>
@@ -35,7 +37,8 @@
       code: '',
       amount: '1',
       nominal: false,
-      address: ''
+      address: '',
+      loading: false
     }),
     mounted: function () {
       this.generate()
@@ -47,11 +50,15 @@
       },
       create: async function () {
         try {
+          this.loading = true
           await api.checkKeeper()
           const kp = utils.keyPair(this.code)
-          await api.create({ pk: kp.publicKey, amount: this.amount })
+          const response = await api.create({ pk: kp.publicKey, amount: this.amount })
+          await api.waitForTxId(JSON.parse(response).id)
           this.addCode({ code: this.code, amount: this.amount })
+          this.loading = false
         } catch (e) {
+          this.loading = false
           this.$emit('set-status', { display: true, text: e.message })
         }
       }
