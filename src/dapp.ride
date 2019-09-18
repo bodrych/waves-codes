@@ -3,28 +3,42 @@
 {-# SCRIPT_TYPE ACCOUNT #-}
 
 @Callable(i)
-func create(pk:String) = {
-    let payment = i.payment.valueOrErrorMessage("Where is a payment?")
-    if (payment.assetId.isDefined()) then throw("You can use only WAVES at the moment") else
-        let codeExists = match getBoolean(this, pk + "_used") {
-            case b:Boolean => !b
-            case _:Unit => false
-        }
-        if codeExists then throw("The code exists") else
-            WriteSet([
-                DataEntry(pk + "_amount", payment.amount),
-                DataEntry(pk + "_used", false)
-            ])
+func create(pk:String, taker:String, deadline:Int) = {
+    if taker != "" && !taker.addressFromString().isDefined() then throw("Invalid taker address") else
+        if deadline < 0 then throw("Invalid deadline") else
+            let payment = i.payment.valueOrErrorMessage("Where is a payment?")
+            if (payment.assetId.isDefined()) then throw("You can use only WAVES at the moment") else
+                let codeExists = match getBoolean(this, pk + "_used") {
+                    case b:Boolean => !b
+                    case _:Unit => false
+                }
+                if codeExists then throw("The code exists") else
+                    let takerSignificant = taker != ""
+                    let deadlineSignificant = deadline > lastBlock.timestamp
+                    let list = DataEntry(pk + "_amount", payment.amount)::DataEntry(pk + "_used", false)::nil
+                    let list1 = if deadlineSignificant then cons(DataEntry(pk + "_deadline", deadline), list) else list
+                    let list2 = if takerSignificant then cons(DataEntry(pk + "_taker", taker), list1) else list1
+                    WriteSet(list2)
+                    # WriteSet([
+                    #     DataEntry(pk + "_amount", payment.amount),
+                    #     DataEntry(pk + "_used", false),
+                    #     DataEntry(pk + "_maker", i.caller.bytes.toBase58String()),
+                    #     DataEntry(pk + "_taker", taker),
+                    #     DataEntry(pk + "_deadline", deadline)
+                    # ])
 }
 
 @Callable(i)
 func withdraw(pk:String, sig:String) = {
-    let codeUsed = getBoolean(this, pk + "_used").valueOrErrorMessage("The code doesn't exist")
+    let codeUsed = this.getBoolean(pk + "_used").valueOrErrorMessage("The code doesn't exist")
     if codeUsed then throw("The code has already been used") else
         if i.feeAssetId != unit then throw("Fee must be in WAVES") else
+            let maker = this.getString(pk + "_maker")
+            let taker = this.getString(pk + "_taker")
+            let deadline = this.getInteger(pk + "_taker")
             let valid = sigVerify(i.callerPublicKey, sig.fromBase58String(), pk.fromBase58String())
             if !valid then throw("Invalid code") else
-                let amount = getIntegerValue(this, pk + "_amount")
+                let amount = this.getIntegerValue(pk + "_amount")
                 ScriptResult(
                     WriteSet([
                         DataEntry(pk + "_used", true)
@@ -33,4 +47,9 @@ func withdraw(pk:String, sig:String) = {
                         ScriptTransfer(i.caller, amount, unit)
                     ])
                 )
+}
+
+@Callable(i)
+func test() = {
+    throw(lastBlock.timestamp.toString())
 }
