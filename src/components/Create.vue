@@ -50,18 +50,21 @@
       },
       create: async function () {
         try {
+          const code = this.code
+          const amount = this.amount
           this.loading = true
           await api.checkKeeper()
-          const kp = utils.keyPair(this.code)
-          const response = await api.create({ pk: kp.publicKey, amount: this.amount })
+          const kp = utils.keyPair(code)
+          const pk = kp.publicKey
+          const response = await api.create({ pk, amount })
           await api.waitForTxId(JSON.parse(response).id)
-          this.addCode({ code: this.code, amount: this.amount })
+          this.addCode({ code, amount })
           this.loading = false
         } catch (e) {
           this.loading = false
           this.$emit('set-status', { display: true, text: e.message })
         }
-      }
+      },
     },
   }
 </script>

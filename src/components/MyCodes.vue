@@ -14,8 +14,8 @@
 </template>
 
 <script>
-  import utils from '../utils'
-  import api from '../api'
+  // import utils from '../utils'
+  // import api from '../api'
   import { mapState, mapMutations } from 'vuex'
 
   export default {
